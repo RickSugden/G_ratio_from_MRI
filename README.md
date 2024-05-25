@@ -3,7 +3,7 @@ Undergraduate thesis project developing novel method for calculation of "g-ratio
 
 The g-ratio is a well-studied metric that has predictive power for the efficiency of conduction in brain nervous tissue. This metric is traditionally obtained using histology, but this imposes the limitation of needing a tissue sample. This limitation motivates the search for a non-invasive surrogate measurement using imaging like MRI. 
 
-In this project I developed a novel pipeline for estimating the G-ratio in a human subject (me!) using neurite orientation dispersion and diffusion imaging (NODDI) and Myelin-water imaging (MWI) acquisitions. 
+In this project I developed a novel pipeline for estimating the G-ratio in a human subject (me!) using Myelin-water imaging (MWI) acquisitions. 
 
 ## Overview of pipeline:
 ![g_ratio_diagram drawio (1)](https://github.com/RickSugden/G_ratio_from_MRI/assets/41484082/51e3ffd1-c70e-4250-91e4-2e6fe2bda6aa)
@@ -24,7 +24,7 @@ Subject is a 21 year old healthy male. All data was preprocessed with MRTrix3.
 
 ## Validation
 ![g_ratio_validation drawio](https://github.com/RickSugden/G_ratio_from_MRI/assets/41484082/45f1ae81-2e50-408c-9381-69ce79cbf904)
-While the estimates cannot be validated by ground truth per-se, I implemented another known method for estimating the g-ratio and compared my method's results to the existing method. Note that my method is unable to estimate some areas in the brain. 
+While the estimates cannot be validated by ground truth per-se, I implemented another known method for estimating the g-ratio that leverages "neurite orientation dispersion and diffusion imaging" (NODDI)  and compared my results. Note that my method is unable to estimate some areas in the brain because of limitations of the 3-compartment model. 
 A. G-ratio map produced by my method
 B. G-ratio map produced by silver-standard method
 C. Corpus callosum ROI G-map from my method
