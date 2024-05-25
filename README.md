@@ -10,5 +10,5 @@ In this project I developed a novel pipeline for estimating the G-ratio in a hum
 **A.** The G-ratio is the ratio between the radius of the neuron to the radius of the neuron and myelin sheath. 
 **B.** Diagram of white matter using a three compartment model. Blue is neuron and red is myelin sheath. Grey is all other brain matter.
 **C.** My project uses two definitions: axon volume fraction (AVF) and myelin volume fraction (MVF).
-**D.** Novel pipeline combines different appraoches in the literature to form a novel method for g-ratio estimation.
+**D.** Novel pipeline combines different appraoches in the literature to form a novel method for g-ratio estimation using the AVF and MVF.
 
