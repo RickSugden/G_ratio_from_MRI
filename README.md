@@ -21,3 +21,14 @@ Subject is a 21 year old healthy male. All data was preprocessed with MRTrix3.
 **D.** MVF can be calculated using the MWF (Jung et al. 2018).
 **E** Estimated G-ratio map using novel method. 
 **F** ROI selected for quality control: Corpus Callosum
+
+**Validation**
+![g_ratio_validation drawio](https://github.com/RickSugden/G_ratio_from_MRI/assets/41484082/45f1ae81-2e50-408c-9381-69ce79cbf904)
+While the estimates cannot be validated by ground truth per-se, I implemented another known method for estimating the g-ratio and compared my method's results to the existing method. Note that my method is unable to estimate some areas in the brain. 
+A. G-ratio map produced by my method
+B. G-ratio map produced by silver-standard method
+C. Corpus callosum ROI G-map from my method
+D. Corpus callosum ROI G-map from silver-standard method
+E. My all-white-matter estimate is similar within the margin of error
+F. My corpus-callosum estimate is different, but still within one standard deviation
+G. scatter plot showing the high pixelwise correlation between the two methods. High pearson correlation (Rho=0.86) between the two methods. 
