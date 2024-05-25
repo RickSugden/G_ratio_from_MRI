@@ -1,0 +1,50 @@
+#!/bin/bash
+clear
+#Instructions:
+#This script was designed to be used as an extension to Stefan Porier's DTI processing pipeline to allow for quantitative comparisons.
+#make sure this script is located in the same directory as the pipeline script (DTI_preprocess_MRtrix3) or wherever you have moved the outputs
+# so that the files are accessed properly. You need the same naming convention (DWI, NODIF_AP, NODIF_PA) as well as renaming the FA folder FA.
+echo " "
+echo "Percent diference calculator"
+echo "By: Rick Sugden, rsugden@uwo.ca"
+echo "This pipeline uses commands from MRtrix3 (https://www.mrtrix.org/) to preprocess DWI data. Please cite MRtrix3 if using this script."
+echo " " 
+##########################################################
+SUBJECT_FOLDER_NAME=P6T1
+##########################################################
+PIPELINE_FOLDER=`pwd` #path where main study folder is located.
+mkdir "$PIPELINE_FOLDER"/percent_differences
+
+ORIGINAL_SUBJ="$PIPELINE_FOLDER"/"$SUBJECT_FOLDER_NAME" #subject folder before the processing
+
+cd "$PIPELINE_FOLDER"/"$SUBJECT_FOLDER_NAME"_preproc
+PROCESSED_SUBJ=`pwd`
+
+cd $PIPELINE_FOLDER
+rm -rf save_tmp
+mkdir save_tmp 
+cd save_tmp
+
+echo "Converting DICOM files to nifti files..." 
+dcm2niix -f nii_file -o "$PIPELINE_FOLDER"/save_tmp -z y "$ORIGINAL_SUBJ"/FA 
+mrgrid "$PIPELINE_FOLDER"/save_tmp/nii_file.nii.gz regrid -voxel 1 -interp nearest upsampled_nifty.nii.gz #new
+
+observed="$PROCESSED_SUBJ"/dti_FA_upsampled.nii.gz
+to_be_expected="$PIPELINE_FOLDER"/save_tmp/upsampled_nifty.nii.gz
+fslmaths $to_be_expected -div 1000 upsampled_and_normalized
+bet2 upsampled_and_normalized expected_brain -m -f 0.1
+expected="$PIPELINE_FOLDER"/save_tmp/expected_brain.nii.gz
+echo "the observed variable is " $observed
+echo "the expected variable is " $expected
+echo `pwd`
+
+#initialize a file
+#touch output.nii
+#percent_difference = (observed-expected)/expected
+fslmaths $observed -sub $expected difference #"$PIPELINE_FOLDER"/save_tmp/
+fslmaths "$PIPELINE_FOLDER"/save_tmp/difference -div $expected "percent_diff_$SUBJECT_FOLDER_NAME"
+#make it o to 100 fslmaths percent_diff_"$SUBJECT_FOLDER_NAME"
+#multiply by mask so you dont have a skull
+#if you want to save it, i.e. not put it in temp then:
+cp percent_diff_"$SUBJECT_FOLDER_NAME".nii.gz "$PIPELINE_FOLDER"/percent_differences
+echo "done"

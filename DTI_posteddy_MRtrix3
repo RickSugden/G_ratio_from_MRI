@@ -1,0 +1,70 @@
+#!/bin/bash
+clear
+
+#STUDY_FOLDER=$PROJ_HOME
+cd $PROJ_HOME/post_eddy
+
+for subj in P3T1 P4T1 P6T1 P8T1; do
+	cd $PROJ_HOME/corrected_data
+
+	if [ -d "$subj"_preproc_posteddy ] # Checks if preprocessing has already been done for this subject (i.e. this script is being run a second time).
+	then 
+		rm -rf "$subj"_preproc_posteddy # Removes the pre-existing subject preprocessing folder and its contents. This is done because attempting to overwrite this directory will cause errors in the program (i.e. mkdir and dtifit).
+	fi
+
+	echo "Creating post-eddy folder for '$subj'..." 
+	mkdir "$subj"_preproc_posteddy # Make a new folder to be used for preprocessing.
+
+	cp $PROJ_HOME/post_eddy/"$subj"/* ./"$subj"_preproc_posteddy  # Copy the post-eddy file into its folder
+	cd "$subj"_preproc_posteddy # Change into preprocessing directory. The remainder of the operations within this loop will take place here.
+
+	#2. Generate a brain mask.
+	bet2 dwi_preproc dwi_brain -m -f 0.1 #threshold 0.1 is to prevent overthresholding 
+
+	#3. Fit tensors to the data
+	echo " " 
+	echo "Fitting diffusion tensors..." 
+	dwi2tensor -mask dwi_brain_mask.nii.gz dwi_preproc.nii.gz dt.nii.gz -fslgrad bvecs_rot bvals_rot 
+	fslmaths dt.nii.gz -nan dt_new.nii.gz #Deal with the nan values. This is done by replacing nans with zeroes.
+
+	#4. Generate tensor-derivated metrics (FA map, eigenvalue, eigenvector)
+	echo " " 
+	echo "Generating FA map..." 
+	tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+
+	#5. Estimate single fiber response function
+	echo " " 
+	echo "Estimating single fiber response function..." 
+	dwi2response fa dwi_preproc.nii.gz response.txt -lmax 8 -threshold 0.7 -fslgrad bvecs_rot bvals_rot 
+
+	#6. Upsample the dwi data.
+	echo " " 
+	echo "Upsampling the DWI data..." 
+	mrgrid dwi_preproc.nii.gz regrid -voxel 1 -interp linear dwi_preproc_upsampled.nii.gz 
+
+	#7. Generate an upsampled brain mask.
+	mrgrid dwi_brain_mask.nii.gz regrid -voxel 1 -interp linear dwi_upsampled_brain_mask.nii.gz 
+
+	#8. Calculate fiber orientation distribution functions (fODFs) 
+	echo " " 
+	echo "Calculating fODFs..." 
+	dwi2fod -mask dwi_upsampled_brain_mask.nii.gz -lmax 8 csd dwi_preproc_upsampled.nii.gz response.txt fod.nii.gz -fslgrad bvecs_rot bvals_rot 
+
+	#9. Estimate peak directions
+	echo " " 
+	echo "Estimating peak directions..." 
+	sh2peaks -mask dwi_upsampled_brain_mask.nii.gz fod.nii.gz peaks.nii.gz 
+
+	#10. Upsample the FA map
+	echo " " 
+	echo "Upsampling FA map..." 
+	mrgrid dti_FA.nii.gz regrid -voxel 1 -interp linear dti_FA_upsampled.nii.gz #new
+	cd $STUDY_FOLDER # Need to switch back to previous directory (main study folder) before next iteration.
+	echo " "  
+	echo "Preprocessing of '$subj' is now finished." 
+	echo -e "\n \n" # Extra space to separate each subject's preprocessing.
+	cd $PROJ_HOME/post_eddy
+done;
+
+echo "Preprocessing of DWI data is all finished! Exiting program now..." 
+echo " "

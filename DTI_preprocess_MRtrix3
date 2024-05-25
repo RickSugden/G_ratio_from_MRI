@@ -1,0 +1,131 @@
+#!/bin/bash
+clear
+#Instructions:
+#In order to run this script, your DICOM folders must be named as follows: DWI, NODIF_AP, NODIF_PA
+#These DICOM folders must be placed within the subject folder (denoted in this script as subj).
+#Lastly, this script must be run from the main study folder (which contains all subject folders).
+echo " "
+echo "DTI Preprocessing Pipeline"
+echo "By: Stefan Poirier, spoirie6@uwo.ca"
+echo "This pipeline uses commands from MRtrix3 (https://www.mrtrix.org/) to preprocess DWI data. Please cite MRtrix3 if using this script."
+echo " " 
+##########################################################
+# DTI preprocessing pipeline
+##########################################################
+STUDY_FOLDER=$PROJ_HOME #path where main study folder is located.
+echo "Beginning preprocessing of DWI data..." 
+echo -e "\n" # Extra line (i.e. 2 blank lines)
+#
+cd $PROJ_HOME/renamed_data
+
+for subj in P2T1 P7T1 P10T1 P12T1;do # Loop through each subject. User must specify the subject file names.
+	cd $PROJ_HOME/corrected_data
+
+	if [ -d "$subj"_preproc ] # Checks if preprocessing has already been done for this subject (i.e. this script is being run a second time).
+	then 
+		rm -rf "$subj"_preproc # Removes the pre-existing subject preprocessing folder and its contents. This is done because attempting to overwrite this directory will cause errors in the program (i.e. mkdir and dtifit).
+	fi
+	echo "Creating preprocessing folder for '$subj'..." 
+	mkdir "$subj"_preproc # Make a new folder to be used for preprocessing.
+	
+	cd $PROJ_HOME/renamed_data/"$subj"
+
+	cp -r ./DWI ./NODIF_AP ./NODIF_PA $PROJ_HOME/corrected_data/"$subj"_preproc # Copy the DWI data, text files, diffusion and gradient files into the preprocessing folder.
+	cd $PROJ_HOME/corrected_data/"$subj"_preproc # Change into preprocessing directory. The remainder of the operations within this loop will take place here.
+
+	#dcm2nii
+	if [ -d save_tmp ] # Checks if preprocessing has already been done for this subject (i.e. this script is being run a second time).
+	then 
+		rm -rf save_tmp # Removes the pre-existing subject preprocessing folder and its contents. This is done because attempting to overwrite this directory will cause errors in the program.
+	fi
+	echo " " 
+	echo "Converting DICOM files to nifti files..." 
+	mkdir save_tmp # Make temporary save folder
+	dcm2niix -o save_tmp -z y DWI/ 
+	cd save_tmp && mv *.nii.gz dwi.nii.gz && mv *.bval bvals && mv *.bvec bvecs && cp * .. && rm * && cd .. 
+	echo "DWI data and diffusion encoding information imported successfully."
+	echo " we are currently in " `pwd`
+	
+		
+	dcm2niix -o save_tmp -z y NODIF_AP/ 
+	cd save_tmp && mv *.nii.gz nodif_AP.nii.gz && cp * .. && rm * && cd .. && echo "\n it works"
+	echo "Reverse phase encoding data imported successfully." 
+	echo " " 
+	
+	dcm2niix -o save_tmp -z y NODIF_PA/ 
+	cd save_tmp && mv *.nii.gz nodif_PA.nii.gz && cp * .. && rm * && cd .. 
+	echo "Forward phase encoding data imported successfully." 
+	echo " " 
+
+	rm -rf save_tmp 
+	
+
+	# Now, DTI preprocessing can begin. #TODO: may append $MRtrix3DIR to path
+	#cd $MRtrix3DIR
+
+	#1. General preprocessing (topup,applytop, eddy)
+	fslmerge -t b0s $PROJ_HOME/corrected_data/"$subj"_preproc/nodif_AP $PROJ_HOME/corrected_data/"$subj"_preproc/nodif_PA # Merges 2 phase encoding images as a single 4D timeseries called b0s.nii.gz
+	echo " " # Blank line
+	echo 'Performing general preprocessing (topup, applytop, then eddy)...'
+	echo `pwd` 
+	dwifslpreproc dwi.nii.gz dwi_preproc.nii.gz -pe_dir AP -rpe_pair -se_epi b0s.nii.gz -fslgrad bvecs bvals -export_grad_fsl bvecs_rot bvals_rot # Performs general preprocessing. Corrects for susceptibility distortions in the b0 (reference) volume.	
+
+	#2. Generate a brain mask.
+	#dwi2mask -fslgrad bvecs_rot bvals_rot dwi_preproc.nii.gz dwi_brain_mask.nii.gz 
+	#bet dwi_preproc dwi_brain -m -f 0.1 
+	bet2 dwi_preproc dwi_brain -m -f 0.1 #added by Rick bcs the mask was over thresholding
+
+	#3. Fit tensors to the data
+	echo " " 
+	echo "Fitting diffusion tensors..." 
+	dwi2tensor -mask dwi_brain_mask.nii.gz dwi_preproc.nii.gz dt.nii.gz -fslgrad bvecs_rot bvals_rot 
+	#dtifit 
+	fslmaths dt.nii.gz -nan dt_new.nii.gz #Deal with the nan values. This is done by replacing nans with zeroes.
+
+	#4. Generate tens"$subj"_or-derivated metrics (FA map, eigenvalue, eigenvector)
+	echo " " 
+	echo "Generating FA map..." 
+	tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+
+
+	#5. Estimate single fiber response function
+	echo " " 
+	echo "Estimating single fiber response function..." 
+	dwi2response fa dwi_preproc.nii.gz response.txt -lmax 8 -threshold 0.7 -fslgrad bvecs_rot bvals_rot 
+
+	#6. Upsample the dwi data.
+	echo " " 
+	echo "Upsampling the DWI data..." 
+	#mrresize dwi_preproc.nii.gz -voxel 1 -interp nearest dwi_preproc_upsampled.nii.gz 
+	mrgrid dwi_preproc.nii.gz regrid -voxel 1 -interp nearest dwi_preproc_upsampled.nii.gz 
+
+	#7. Generate an upsampled brain mask.
+	#mrresize dwi_brain_mask.nii.gz regrid -voxel 1 -interp nearest dwi_upsampled_brain_mask.nii.gz
+	mrgrid dwi_brain_mask.nii.gz regrid -voxel 1 -interp nearest dwi_upsampled_brain_mask.nii.gz #This method is superior to the other two commands below
+	#dwi2mask -fslgrad bvecs_rot bvals_rot dwi_preproc_upsampled.nii.gz dwi_upsampled_brain_mask.nii.gz 
+	#bet dwi_preproc_upsampled dwi_upsampled_brain -m -f 0.1 
+
+	#8. Calculate fiber orientation distribution functions (fODFs) 
+	echo " " 
+	echo "Calculating fODFs..." 
+	dwi2fod -mask dwi_upsampled_brain_mask.nii.gz -lmax 8 csd dwi_preproc_upsampled.nii.gz response.txt fod.nii.gz -fslgrad bvecs_rot bvals_rot 
+
+	#9. Estimate peak directions
+	echo " " 
+	echo "Estimating peak directions..." 
+	sh2peaks -mask dwi_upsampled_brain_mask.nii.gz fod.nii.gz peaks.nii.gz 
+
+	#10. Upsample the FA map
+	echo " " 
+	echo "Upsampling FA map..." 
+	#former #mrresize dti_FA.nii.gz -voxel 1 -interp nearest dti_FA_upsampled.nii.gz 
+	mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz #new
+	cd $STUDY_FOLDER # Need to switch back to previous directory (main study folder) before next iteration.
+	echo " "  
+	echo "Preprocessing of '$subj' is now finished." 
+	echo -e "\n \n \n" # Extra space to separate each subject's preprocessing.
+
+	#cd $FSLDIR
+done;
+echo "Preprocessing of DWI data is all finished! Exiting program now..." 
+echo " "

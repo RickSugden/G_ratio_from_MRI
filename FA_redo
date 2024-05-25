@@ -1,0 +1,47 @@
+#!/bin/bash
+clear
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P1T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P2T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P5T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P7T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P9T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P10T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P11T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P12T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
+
+cd /home/rick/Documents/2020_USRI/DTI_summer_research_project/corrected_data/P13T1_preproc
+
+tensor2metric -mask dwi_brain_mask.nii.gz -fa dti_FA.nii.gz -value dti_L.nii.gz -vector dti_V.nii.gz dt_new.nii.gz 
+mrgrid dti_FA.nii.gz regrid -voxel 1 -interp nearest dti_FA_upsampled.nii.gz
